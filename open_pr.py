@@ -31,8 +31,8 @@ def publish(root, report, repository, token, run_id, request=None):
         if len(prs)<100:break
     else:raise ValueError('Pull-request pagination limit reached')
     def git(*args):
-        return subprocess.check_output(['git','-C',str(root),*args],stderr=subprocess.STDOUT).decode().strip()
-    if git('branch','--show-current')!=default:
+        return subprocess.check_output(['git','-C',str(root),*args],stderr=subprocess.STDOUT).decode()
+    if git('branch','--show-current').strip()!=default:
         raise ValueError('Cleanup must start from the checked-out default branch')
     branch='automation/em-dash-remover-'+run_id
     git('switch','-c',branch)
