@@ -1,0 +1,70 @@
+name: Em Dash Remover
+description: Check or fix em dashes in tracked repository text
+author: nightangelflowerwin-ops
+branding:
+  icon: edit-3
+  color: green
+inputs:
+  mode:
+    description: check, fix, or report
+    default: check
+  root:
+    description: Git directory to scan
+    default: .
+  all-text:
+    description: Include source and data files; review diffs for semantic changes
+    default: 'false'
+  encoded:
+    description: Include supported escaped and misencoded forms
+    default: 'false'
+  exclude:
+    description: Newline-separated glob patterns relative to root
+    default: ''
+  max-bytes:
+    description: Maximum file size in bytes
+    default: '2097152'
+  report:
+    description: JSON report path
+    default: emdash-report.json
+  create-pr:
+    description: Propose fixes on a new branch; requires fix mode and write permissions
+    default: 'false'
+  token:
+    description: Repository token used only for pull-request creation
+    default: ''
+outputs:
+  changed-files:
+    description: Number of matching files
+    value: ${{ steps.scan.outputs.changed-files }}
+  replacements:
+    description: Number of replacements
+    value: ${{ steps.scan.outputs.replacements }}
+  pr-url:
+    description: Proposed or existing cleanup pull request
+    value: ${{ steps.propose.outputs.pr-url }}
+runs:
+  using: composite
+  steps:
+    - id: scan
+      shell: bash
+      env:
+        ED_MODE: ${{ inputs.mode }}
+        ED_ROOT: ${{ inputs.root }}
+        ED_ALL: ${{ inputs.all-text }}
+        ED_ENCODED: ${{ inputs.encoded }}
+        ED_EXCLUDE: ${{ inputs.exclude }}
+        ED_MAX: ${{ inputs.max-bytes }}
+        ED_REPORT: ${{ inputs.report }}
+        ED_ACTION_PATH: ${{ github.action_path }}
+      run: |
+        python "$ED_ACTION_PATH/action_entry.py"
+    - id: propose
+      if: inputs.create-pr == 'true' && inputs.mode == 'fix'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        ED_ACTION_PATH: ${{ github.action_path }}
+        ED_ROOT: ${{ inputs.root }}
+        ED_REPORT: ${{ inputs.report }}
+      run: |
+        python "$ED_ACTION_PATH/open_pr.py"

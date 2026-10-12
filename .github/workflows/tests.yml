@@ -1,0 +1,33 @@
+name: Tests
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest -v
+      - uses: ./
+        with:
+          mode: check
+          encoded: 'true'
+      - name: Create a tracked fixture
+        run: python -c "from pathlib import Path; import subprocess; p=Path('action-fixture.md'); p.write_text('before '+chr(8212)+' after',encoding='utf-8'); subprocess.run(['git','add',str(p)],check=True)"
+      - id: fix
+        uses: ./
+        with:
+          mode: fix
+      - name: Verify action result and output
+        env:
+          CHANGED: ${{ steps.fix.outputs.changed-files }}
+        run: python -c "import os; from pathlib import Path; assert os.environ['CHANGED']=='1'; assert Path('action-fixture.md').read_text()=='before - after'"
+      - uses: ./
+        with:
+          mode: check

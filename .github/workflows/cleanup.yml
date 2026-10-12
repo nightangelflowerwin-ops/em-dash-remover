@@ -1,0 +1,29 @@
+name: Propose punctuation cleanup
+on:
+  workflow_dispatch:
+  push:
+  schedule:
+    - cron: '17 9 * * 1'
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: em-dash-cleanup
+  cancel-in-progress: false
+jobs:
+  cleanup:
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: ./
+        with:
+          mode: fix
+          encoded: 'true'
+          create-pr: 'true'
+          token: ${{ github.token }}
